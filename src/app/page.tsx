@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { RecipeCard, type Recipe } from "./components/RecipeCard"
-import { RecipeForm } from "./components/RecipeForm"
+import { RecipeCard, type Recipe } from "@/components/RecipeCard"
+import { RecipeForm } from "@/components/RecipeForm"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
