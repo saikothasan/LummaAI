@@ -46,7 +46,10 @@ export default function ImageGenerator() {
       const data: GenerateImageResponse = await response.json()
       if (data.url) {
         setImageUrl(data.url)
-        setHistory((prevHistory) => [data.url, ...prevHistory].slice(0, 5))
+        setHistory((prevHistory) => {
+          const newHistory = [data.url, ...prevHistory]
+          return newHistory.slice(0, 5)
+        })
       } else {
         setError(data.error || "Failed to generate image")
       }
