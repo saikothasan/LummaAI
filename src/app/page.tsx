@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Loader2, Copy, History, Download, Sparkles, Zap, Camera } from "lucide-react"
+import { Loader2, Copy, Download, Sparkles, Zap } from "lucide-react"
 import Image from "next/image"
 import { useToast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
@@ -23,7 +23,6 @@ export default function ImageGenerator() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [timer, setTimer] = useState(0)
-  const [history, setHistory] = useState<string[]>([])
   const { toast } = useToast()
 
   useEffect(() => {
@@ -46,10 +45,6 @@ export default function ImageGenerator() {
       const data: GenerateImageResponse = await response.json()
       if (data.url) {
         setImageUrl(data.url)
-        setHistory((prevHistory) => {
-          const newHistory = [data.url, ...prevHistory]
-          return newHistory.slice(0, 5)
-        })
       } else {
         setError(data.error || "Failed to generate image")
       }
@@ -219,34 +214,6 @@ export default function ImageGenerator() {
                   </AnimatePresence>
                 </div>
               </CardContent>
-              <CardFooter className="bg-gray-50 dark:bg-gray-800 p-6">
-                <div className="w-full">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center text-purple-700 dark:text-purple-300">
-                    <History className="mr-2 h-5 w-5" /> Recent Generations
-                  </h3>
-                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
-                    {history.map((url, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="relative aspect-square rounded-md overflow-hidden shadow-md group"
-                      >
-                        <Image
-                          src={url || "/placeholder.svg"}
-                          alt={`AI-generated image ${index + 1}`}
-                          fill
-                          className="object-cover transition-transform duration-200 group-hover:scale-110"
-                        />
-                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity duration-200 flex items-center justify-center">
-                          <Camera className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              </CardFooter>
             </Card>
           </motion.div>
 
