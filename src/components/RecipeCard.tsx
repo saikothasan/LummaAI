@@ -20,7 +20,11 @@ export type Recipe = {
   tags: string[]
 }
 
-export function RecipeCard({ recipe }: { recipe: Recipe }) {
+interface RecipeCardProps {
+  recipe: Recipe
+}
+
+export function RecipeCard({ recipe }: RecipeCardProps) {
   return (
     <Card className="w-full">
       <CardHeader>
