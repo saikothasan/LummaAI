@@ -7,11 +7,16 @@ import { RecipeForm } from "@/components/RecipeForm"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { LoadingState } from "@/components/loading-state"
+import { AlertCircle } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function RecipeGenerator() {
   const [recipe, setRecipe] = useState<Recipe | null>(null)
   const [savedRecipes, setSavedRecipes] = useState<Recipe[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingSaved, setIsLoadingSaved] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -20,22 +25,28 @@ export default function RecipeGenerator() {
 
   const fetchSavedRecipes = async () => {
     try {
+      setIsLoadingSaved(true)
+      setError(null)
       const res = await fetch("/api/recipes")
       if (!res.ok) throw new Error("Failed to fetch recipes")
-      const recipes = await res.json()
+      const recipes: Recipe[] = await res.json()
       setSavedRecipes(recipes)
     } catch (error) {
       console.error("Error fetching recipes:", error)
+      setError("Failed to load saved recipes")
       toast({
         title: "Error",
         description: "Failed to fetch saved recipes.",
         variant: "destructive",
       })
+    } finally {
+      setIsLoadingSaved(false)
     }
   }
 
   const handleSubmit = async (dish: string, dietary: string) => {
     setIsLoading(true)
+    setError(null)
     try {
       const res = await fetch("/api/generate-recipe", {
         method: "POST",
@@ -47,9 +58,14 @@ export default function RecipeGenerator() {
 
       const data = await res.json()
       setRecipe(data.recipe)
-      await fetchSavedRecipes() // Refresh the list of saved recipes
+      await fetchSavedRecipes()
+      toast({
+        title: "Success",
+        description: "Recipe generated and saved successfully!",
+      })
     } catch (error) {
       console.error("Error:", error)
+      setError("Failed to generate recipe")
       toast({
         title: "Error",
         description: "Failed to generate recipe. Please try again.",
@@ -64,7 +80,7 @@ export default function RecipeGenerator() {
     try {
       const res = await fetch(`/api/recipes?id=${id}`, { method: "DELETE" })
       if (!res.ok) throw new Error("Failed to delete recipe")
-      await fetchSavedRecipes() // Refresh the list of saved recipes
+      await fetchSavedRecipes()
       toast({
         title: "Recipe Deleted",
         description: "The recipe has been removed from your saved recipes.",
@@ -77,6 +93,18 @@ export default function RecipeGenerator() {
         variant: "destructive",
       })
     }
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-4">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
+    )
   }
 
   return (
@@ -97,7 +125,9 @@ export default function RecipeGenerator() {
             <TabsTrigger value="saved">Saved Recipes</TabsTrigger>
           </TabsList>
           <TabsContent value="current">
-            {recipe ? (
+            {isLoading ? (
+              <LoadingState />
+            ) : recipe ? (
               <div className="space-y-4">
                 <RecipeCard recipe={recipe} />
               </div>
@@ -106,7 +136,9 @@ export default function RecipeGenerator() {
             )}
           </TabsContent>
           <TabsContent value="saved">
-            {savedRecipes.length > 0 ? (
+            {isLoadingSaved ? (
+              <LoadingState />
+            ) : savedRecipes.length > 0 ? (
               <div className="space-y-4">
                 {savedRecipes.map((savedRecipe) => (
                   <div key={savedRecipe.id} className="relative">
