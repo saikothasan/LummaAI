@@ -2,16 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export const runtime = "edge"
 
-interface GenerateImageResponse {
-  url?: string
-  error?: string
-}
-
-interface AIAPIResponse {
-  url?: string
-}
-
-export async function GET(request: NextRequest): Promise<NextResponse<GenerateImageResponse>> {
+export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const prompt = searchParams.get("prompt")
 
@@ -21,13 +12,9 @@ export async function GET(request: NextRequest): Promise<NextResponse<GenerateIm
 
   try {
     const response = await fetch(`https://ai.xvipp.workers.dev/?prompt=${encodeURIComponent(prompt)}`)
-    const data: AIAPIResponse = await response.json()
+    const data = await response.json()
 
-    if (data.url) {
-      return NextResponse.json({ url: data.url })
-    } else {
-      return NextResponse.json({ error: "Failed to generate image" }, { status: 500 })
-    }
+    return NextResponse.json(data)
   } catch (error) {
     console.error("Error generating image:", error)
     return NextResponse.json({ error: "Failed to generate image" }, { status: 500 })
