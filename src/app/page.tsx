@@ -21,7 +21,7 @@ export default function ImageGenerator() {
   const [prompt, setPrompt] = useState("")
   const [imageUrl, setImageUrl] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
+  const [error, setError] = useState<string | null>(null)
   const [timer, setTimer] = useState(0)
   const { toast } = useToast()
 
@@ -39,7 +39,7 @@ export default function ImageGenerator() {
 
   const generateImage = async () => {
     setIsLoading(true)
-    setError("")
+    setError(null)
     try {
       const response = await fetch(`/api/generate-image?prompt=${encodeURIComponent(prompt)}`)
       const data: GenerateImageResponse = await response.json()
@@ -49,7 +49,7 @@ export default function ImageGenerator() {
         setError(data.error || "Failed to generate image")
       }
     } catch (error) {
-      setError("An unexpected error occurred")
+      setError((error as Error).message || "An unexpected error occurred")
       console.error("Error generating image:", error)
     } finally {
       setIsLoading(false)
@@ -80,7 +80,7 @@ export default function ImageGenerator() {
         title: "Downloaded!",
         description: "Image has been downloaded successfully.",
       })
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error downloading image:", error)
       toast({
         title: "Error",
@@ -199,6 +199,7 @@ export default function ImageGenerator() {
                             alt="AI-generated image"
                             fill
                             className="object-cover"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                           />
                         </div>
                         <div className="flex flex-wrap gap-2">
