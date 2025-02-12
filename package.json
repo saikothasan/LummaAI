@@ -57,6 +57,7 @@
     "recharts": "^2.15.1",
     "sonner": "^1.7.4",
     "ai": "latest",
+    "cloudflare-workers": "^0.0.14",
     "workers-ai-provider": "latest",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
