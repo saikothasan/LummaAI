@@ -1,164 +1,102 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { RecipeCard, type Recipe } from "@/components/RecipeCard"
-import { RecipeForm } from "@/components/RecipeForm"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/hooks/use-toast"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { LoadingState } from "@/components/loading-state"
-import { AlertCircle } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Loader2, Copy, RefreshCw } from "lucide-react"
+import Image from "next/image"
+import { useToast } from "@/hooks/use-toast"
 
-export default function RecipeGenerator() {
-  const [recipe, setRecipe] = useState<Recipe | null>(null)
-  const [savedRecipes, setSavedRecipes] = useState<Recipe[]>([])
+export default function ImageGenerator() {
+  const [prompt, setPrompt] = useState("")
+  const [imageUrl, setImageUrl] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [isLoadingSaved, setIsLoadingSaved] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState("")
   const { toast } = useToast()
 
-  useEffect(() => {
-    fetchSavedRecipes()
-  }, [])
-
-  const fetchSavedRecipes = async () => {
-    try {
-      setIsLoadingSaved(true)
-      setError(null)
-      const res = await fetch("/api/recipes")
-      if (!res.ok) throw new Error("Failed to fetch recipes")
-      const recipes: Recipe[] = await res.json()
-      setSavedRecipes(recipes)
-    } catch (error) {
-      console.error("Error fetching recipes:", error)
-      setError("Failed to load saved recipes")
-      toast({
-        title: "Error",
-        description: "Failed to fetch saved recipes.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoadingSaved(false)
-    }
-  }
-
-  const handleSubmit = async (dish: string, dietary: string) => {
+  const generateImage = async () => {
     setIsLoading(true)
-    setError(null)
+    setError("")
     try {
-      const res = await fetch("/api/generate-recipe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dish, dietary }),
-      })
-
-      if (!res.ok) throw new Error("Failed to generate recipe")
-
-      const data = await res.json()
-      setRecipe(data.recipe)
-      await fetchSavedRecipes()
-      toast({
-        title: "Success",
-        description: "Recipe generated and saved successfully!",
-      })
+      const response = await fetch(`/api/generate-image?prompt=${encodeURIComponent(prompt)}`)
+      const data = await response.json()
+      if (data.url) {
+        setImageUrl(data.url)
+      } else {
+        setError(data.error || "Failed to generate image")
+      }
     } catch (error) {
-      console.error("Error:", error)
-      setError("Failed to generate recipe")
-      toast({
-        title: "Error",
-        description: "Failed to generate recipe. Please try again.",
-        variant: "destructive",
-      })
+      setError("An unexpected error occurred")
+      console.error("Error generating image:", error)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const deleteRecipe = async (id: string) => {
-    try {
-      const res = await fetch(`/api/recipes?id=${id}`, { method: "DELETE" })
-      if (!res.ok) throw new Error("Failed to delete recipe")
-      await fetchSavedRecipes()
-      toast({
-        title: "Recipe Deleted",
-        description: "The recipe has been removed from your saved recipes.",
-      })
-    } catch (error) {
-      console.error("Error deleting recipe:", error)
-      toast({
-        title: "Error",
-        description: "Failed to delete recipe.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  if (error) {
-    return (
-      <div className="container mx-auto p-4">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      </div>
-    )
+  const copyImageUrl = () => {
+    navigator.clipboard.writeText(imageUrl)
+    toast({
+      title: "Copied!",
+      description: "Image URL has been copied to clipboard.",
+    })
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-center mb-8">AI Recipe Generator</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md mx-auto">
+        <h1 className="text-3xl font-extrabold text-center text-gray-900 mb-6">AI Image Generator</h1>
         <Card>
           <CardHeader>
-            <CardTitle>Generate a New Recipe</CardTitle>
+            <CardTitle>Generate Your Image</CardTitle>
+            <CardDescription>Enter a prompt to generate an AI image</CardDescription>
           </CardHeader>
           <CardContent>
-            <RecipeForm onSubmit={handleSubmit} isLoading={isLoading} />
-          </CardContent>
-        </Card>
-        <Tabs defaultValue="current">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="current">Current Recipe</TabsTrigger>
-            <TabsTrigger value="saved">Saved Recipes</TabsTrigger>
-          </TabsList>
-          <TabsContent value="current">
-            {isLoading ? (
-              <LoadingState />
-            ) : recipe ? (
-              <div className="space-y-4">
-                <RecipeCard recipe={recipe} />
+            <div className="space-y-4">
+              <div className="flex space-x-2">
+                <Input
+                  type="text"
+                  placeholder="Enter your prompt"
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                />
+                <Button onClick={generateImage} disabled={isLoading || !prompt}>
+                  {isLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                  )}
+                  {isLoading ? "Generating..." : "Generate"}
+                </Button>
               </div>
-            ) : (
-              <p className="text-center text-muted-foreground">Generate a recipe to see it here.</p>
-            )}
-          </TabsContent>
-          <TabsContent value="saved">
-            {isLoadingSaved ? (
-              <LoadingState />
-            ) : savedRecipes.length > 0 ? (
-              <div className="space-y-4">
-                {savedRecipes.map((savedRecipe) => (
-                  <div key={savedRecipe.id} className="relative">
-                    <RecipeCard recipe={savedRecipe} />
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2"
-                      onClick={() => deleteRecipe(savedRecipe.id)}
-                    >
-                      Delete
-                    </Button>
+              {error && (
+                <Alert variant="destructive">
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              {imageUrl && (
+                <div className="space-y-4">
+                  <div className="relative w-full aspect-square">
+                    <Image
+                      src={imageUrl || "/placeholder.svg"}
+                      alt="Generated image"
+                      fill
+                      className="object-cover rounded-md"
+                    />
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-muted-foreground">No saved recipes yet.</p>
-            )}
-          </TabsContent>
-        </Tabs>
+                  <Button onClick={copyImageUrl} className="w-full">
+                    <Copy className="mr-2 h-4 w-4" /> Copy Image URL
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardContent>
+          <CardFooter>
+            <p className="text-sm text-gray-500">Images are generated using AI. Results may vary.</p>
+          </CardFooter>
+        </Card>
       </div>
     </div>
   )
