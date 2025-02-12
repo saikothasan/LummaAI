@@ -7,10 +7,15 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription }
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Loader2, Copy, History, Download, Sparkles, Zap, Camera } from "lucide-react"
 import Image from "next/image"
-import { useToast } from "@/hooks/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
+
+interface GenerateImageResponse {
+  url?: string
+  error?: string
+}
 
 export default function ImageGenerator() {
   const [prompt, setPrompt] = useState("")
@@ -38,7 +43,7 @@ export default function ImageGenerator() {
     setError("")
     try {
       const response = await fetch(`/api/generate-image?prompt=${encodeURIComponent(prompt)}`)
-      const data = await response.json()
+      const data: GenerateImageResponse = await response.json()
       if (data.url) {
         setImageUrl(data.url)
         setHistory((prevHistory) => [data.url, ...prevHistory.slice(0, 4)])
