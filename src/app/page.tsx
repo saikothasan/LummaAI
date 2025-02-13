@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Loader2, Copy, Download, Sparkles, Zap } from "lucide-react"
+import { Loader2, Copy, Download, Sparkles, Zap, MagnetIcon as Magic } from "lucide-react"
 import Image from "next/image"
 import { useToast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
@@ -19,8 +19,10 @@ interface GenerateImageResponse {
 
 export default function ImageGenerator() {
   const [prompt, setPrompt] = useState("")
+  const [enhancedPrompt, setEnhancedPrompt] = useState("")
   const [imageUrl, setImageUrl] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isEnhancing, setIsEnhancing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [timer, setTimer] = useState(0)
   const { toast } = useToast()
@@ -36,6 +38,22 @@ export default function ImageGenerator() {
     }
     return () => clearInterval(interval)
   }, [isLoading])
+
+  const enhancePrompt = async () => {
+    setIsEnhancing(true)
+    setError(null)
+    try {
+      const response = await fetch(`https://dark.anonbd-info.workers.dev/?prompt=${encodeURIComponent(prompt)}`)
+      const data = await response.text()
+      setEnhancedPrompt(data.trim())
+      setPrompt(data.trim())
+    } catch (error) {
+      setError("Failed to enhance prompt. Please try again.")
+      console.error("Error enhancing prompt:", error)
+    } finally {
+      setIsEnhancing(false)
+    }
+  }
 
   const generateImage = async () => {
     setIsLoading(true)
@@ -76,6 +94,7 @@ export default function ImageGenerator() {
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
       toast({
         title: "Downloaded!",
         description: "Image has been downloaded successfully.",
@@ -110,113 +129,115 @@ export default function ImageGenerator() {
       </div>
       <main className="flex-grow container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="mb-12 text-center"
-          >
-            <h1 className="text-4xl font-bold text-purple-800 dark:text-purple-300 mb-4">Welcome to LummaAI</h1>
-            <p className="text-xl text-gray-600 dark:text-gray-300 mb-6">
-              Unleash your creativity with AI-powered image generation
-            </p>
-            <p className="text-gray-600 dark:text-gray-400 mb-8">
-              LummaAI harnesses the power of advanced artificial intelligence to transform your ideas into stunning
-              visual creations. Whether you're an artist seeking inspiration, a marketer creating eye-catching content,
-              or simply curious about AI's creative capabilities, LummaAI is your gateway to limitless visual
-              possibilities.
-            </p>
-          </motion.section>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Card className="border-0 shadow-lg overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
-                <CardTitle className="text-2xl font-bold text-center">Generate Your AI Image</CardTitle>
-                <CardDescription className="text-center text-purple-100">
-                  Enter a prompt to create stunning AI-generated images
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-6">
-                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                    <div className="relative flex-grow">
-                      <Input
-                        type="text"
-                        placeholder="Enter your prompt"
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                        className="pr-10"
-                      />
-                      <Sparkles className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-500" />
-                    </div>
-                    <Button
-                      onClick={generateImage}
-                      disabled={isLoading || !prompt}
-                      className="w-full sm:w-auto bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 transition-all duration-200"
-                    >
-                      {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
-                      {isLoading ? "Generating..." : "Generate"}
-                    </Button>
+          <Card className="border-0 shadow-lg overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+              <CardTitle className="text-2xl font-bold text-center">Generate Your AI Image</CardTitle>
+              <CardDescription className="text-center text-purple-100">
+                Enter a prompt to create stunning AI-generated images
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                  <div className="relative flex-grow">
+                    <Input
+                      type="text"
+                      placeholder="Enter your prompt"
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      className="pr-10"
+                    />
+                    <Sparkles className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-500" />
                   </div>
-                  {error && (
-                    <Alert variant="destructive">
-                      <AlertTitle>Error</AlertTitle>
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                  )}
-                  <AnimatePresence mode="wait">
-                    {isLoading && (
-                      <motion.div
-                        key="loading"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="flex flex-col items-center justify-center space-y-2"
-                      >
-                        <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-lg font-semibold text-purple-700 dark:text-purple-300">
-                          Generating Image...
-                        </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Time elapsed: {timer} seconds</p>
-                      </motion.div>
+                  <Button
+                    onClick={enhancePrompt}
+                    disabled={isEnhancing || !prompt}
+                    className="w-full sm:w-auto bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 transition-all duration-200"
+                  >
+                    {isEnhancing ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Magic className="mr-2 h-4 w-4" />
                     )}
-                    {imageUrl && !isLoading && (
-                      <motion.div
-                        key="image"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        transition={{ type: "spring", stiffness: 200, damping: 20 }}
-                        className="space-y-4"
-                      >
-                        <div className="relative w-full aspect-square rounded-lg overflow-hidden shadow-lg">
-                          <Image
-                            src={imageUrl || "/placeholder.svg"}
-                            alt="AI-generated image"
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                          />
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <Button onClick={copyImageUrl} className="flex-1 bg-purple-500 hover:bg-purple-600">
-                            <Copy className="mr-2 h-4 w-4" /> Copy URL
-                          </Button>
-                          <Button onClick={downloadImage} className="flex-1 bg-indigo-500 hover:bg-indigo-600">
-                            <Download className="mr-2 h-4 w-4" /> Download
-                          </Button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                    {isEnhancing ? "Enhancing..." : "Enhance Prompt"}
+                  </Button>
+                  <Button
+                    onClick={generateImage}
+                    disabled={isLoading || !prompt}
+                    className="w-full sm:w-auto bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 transition-all duration-200"
+                  >
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+                    {isLoading ? "Generating..." : "Generate"}
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+                {enhancedPrompt && (
+                  <div className="bg-purple-100 dark:bg-purple-900 p-4 rounded-md">
+                    <p className="text-sm text-purple-800 dark:text-purple-200">
+                      <strong>Enhanced Prompt:</strong> {enhancedPrompt}
+                    </p>
+                  </div>
+                )}
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                <AnimatePresence mode="wait">
+                  {isLoading && (
+                    <motion.div
+                      key="loading"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="flex flex-col items-center justify-center space-y-2"
+                    >
+                      <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                      <p className="text-lg font-semibold text-purple-700 dark:text-purple-300">Generating Image...</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Time elapsed: {timer} seconds</p>
+                    </motion.div>
+                  )}
+                  {imageUrl && !isLoading && (
+                    <motion.div
+                      key="image"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                      className="space-y-4"
+                    >
+                      <div className="relative w-full aspect-square rounded-lg overflow-hidden shadow-lg">
+                        <Image
+                          src={imageUrl || "/placeholder.svg"}
+                          alt="AI-generated image"
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          unoptimized
+                        />
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          onClick={copyImageUrl}
+                          className="flex-1 bg-purple-500 hover:bg-purple-600"
+                          variant="secondary"
+                        >
+                          <Copy className="mr-2 h-4 w-4" /> Copy URL
+                        </Button>
+                        <Button
+                          onClick={downloadImage}
+                          className="flex-1 bg-indigo-500 hover:bg-indigo-600"
+                          variant="secondary"
+                        >
+                          <Download className="mr-2 h-4 w-4" /> Download
+                        </Button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </CardContent>
+          </Card>
 
           <motion.section
             initial={{ opacity: 0, y: 20 }}
