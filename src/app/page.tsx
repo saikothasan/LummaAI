@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Loader2, Copy, Download, Sparkles, Zap, MagnetIcon as Magic } from "lucide-react"
+import { Loader2, Copy, Download, Sparkles, Zap, Wand2 } from "lucide-react"
 import Image from "next/image"
 import { useToast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
@@ -19,7 +19,6 @@ interface GenerateImageResponse {
 
 export default function ImageGenerator() {
   const [prompt, setPrompt] = useState("")
-  const [enhancedPrompt, setEnhancedPrompt] = useState("")
   const [imageUrl, setImageUrl] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isEnhancing, setIsEnhancing] = useState(false)
@@ -40,16 +39,35 @@ export default function ImageGenerator() {
   }, [isLoading])
 
   const enhancePrompt = async () => {
+    if (!prompt) return
+
     setIsEnhancing(true)
     setError(null)
     try {
-      const response = await fetch(`https://dark.anonbd-info.workers.dev/?prompt=${encodeURIComponent(prompt)}`)
-      const data = await response.text()
-      setEnhancedPrompt(data.trim())
-      setPrompt(data.trim())
+      const response = await fetch(`/api/enhance-prompt?prompt=${encodeURIComponent(prompt)}`)
+      if (!response.ok) {
+        throw new Error(`API responded with status: ${response.status}`)
+      }
+      const data = await response.json()
+      if (data.enhancedPrompt) {
+        setPrompt(data.enhancedPrompt)
+        toast({
+          title: "Prompt Enhanced",
+          description: "Your prompt has been enhanced for better results.",
+        })
+      } else if (data.error) {
+        throw new Error(data.error)
+      } else {
+        throw new Error("Unexpected response from server")
+      }
     } catch (error) {
-      setError("Failed to enhance prompt. Please try again.")
+      setError(`Failed to enhance prompt: ${(error as Error).message}`)
       console.error("Error enhancing prompt:", error)
+      toast({
+        title: "Error",
+        description: "Failed to enhance prompt. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setIsEnhancing(false)
     }
@@ -145,22 +163,25 @@ export default function ImageGenerator() {
                       placeholder="Enter your prompt"
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
-                      className="pr-10"
+                      className="pr-20"
                     />
-                    <Sparkles className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-500" />
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex space-x-1">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={enhancePrompt}
+                        disabled={isEnhancing || !prompt}
+                        className="h-8 w-8"
+                      >
+                        {isEnhancing ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Wand2 className="h-4 w-4 text-purple-500" />
+                        )}
+                      </Button>
+                      <Sparkles className="h-4 w-4 text-purple-500 self-center" />
+                    </div>
                   </div>
-                  <Button
-                    onClick={enhancePrompt}
-                    disabled={isEnhancing || !prompt}
-                    className="w-full sm:w-auto bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 transition-all duration-200"
-                  >
-                    {isEnhancing ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Magic className="mr-2 h-4 w-4" />
-                    )}
-                    {isEnhancing ? "Enhancing..." : "Enhance Prompt"}
-                  </Button>
                   <Button
                     onClick={generateImage}
                     disabled={isLoading || !prompt}
@@ -170,13 +191,6 @@ export default function ImageGenerator() {
                     {isLoading ? "Generating..." : "Generate"}
                   </Button>
                 </div>
-                {enhancedPrompt && (
-                  <div className="bg-purple-100 dark:bg-purple-900 p-4 rounded-md">
-                    <p className="text-sm text-purple-800 dark:text-purple-200">
-                      <strong>Enhanced Prompt:</strong> {enhancedPrompt}
-                    </p>
-                  </div>
-                )}
                 {error && (
                   <Alert variant="destructive">
                     <AlertTitle>Error</AlertTitle>
