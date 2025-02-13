@@ -48,17 +48,22 @@ export default function ImageGenerator() {
       if (!response.ok) {
         throw new Error(`API responded with status: ${response.status}`)
       }
-      const data = await response.json()
-      if (data.enhancedPrompt) {
-        setPrompt(data.enhancedPrompt)
-        toast({
-          title: "Prompt Enhanced",
-          description: "Your prompt has been enhanced for better results.",
-        })
-      } else if (data.error) {
-        throw new Error(data.error)
+      const data: unknown = await response.json()
+
+      if (typeof data === "object" && data !== null) {
+        if ("enhancedPrompt" in data && typeof data.enhancedPrompt === "string") {
+          setPrompt(data.enhancedPrompt)
+          toast({
+            title: "Prompt Enhanced",
+            description: "Your prompt has been enhanced for better results.",
+          })
+        } else if ("error" in data && typeof data.error === "string") {
+          throw new Error(data.error)
+        } else {
+          throw new Error("Unexpected response format from server")
+        }
       } else {
-        throw new Error("Unexpected response from server")
+        throw new Error("Invalid response from server")
       }
     } catch (error) {
       setError(`Failed to enhance prompt: ${(error as Error).message}`)
